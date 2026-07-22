@@ -62,6 +62,52 @@ class Bq(Pyodbc):
         self.parse_instances()
 
 
+    def validateQuery(self, query, instance):
+
+
+        bRun = True
+        bReRun = False
+        if self.instances[instance]['last_query'] == query:
+            # If the validation allows rerun, that we are here:
+            bReRun = True
+
+        # Example Validation
+
+        # Warn only - Don't change bRun
+        # This one is looking for a ; in the query. We let it run, but we warn the user
+        # Basically, we print a warning but don't change the bRun variable and the bReRun doesn't matter
+        if query.find(";") >= 0:
+            print("")
+            print("WARNING - Do not type a trailing semi colon on queries, your query may fail")
+
+        qlower = query.lower()
+        if qlower.find("select *") >= 0 and qlower.find("limit ") >= 0 and qlower.find("where") < 0:
+            print("")
+            print("It looks like you did a 'select * from table limit x' type query in order to view the data in a table")
+            print("This causes a full table scan, and takes lots of Google costs for data scanning")
+            print("Options: ")
+            print(" - Look at the Google Console Data Preview.")
+            print(" - Find the partition field and do select * from table where date_field = 'a date' limit 10")
+            print(" - YOLO and burn through cash - Just resubmit the query. You'll get this warning, but it will go ahead an run. I hope it was worth it")
+            print("")
+            if bReRun:
+                bRun = True
+            else:
+                bRun = False
+
+        # Warn and don't submit after first attempt - Second attempt go ahead and run
+        # If the query doesn't have a day query, then maybe we want to WARN the user and not run the query.
+        # However, if this is the second time in a row that the user has submitted the query, then they must want to run without day
+        # So if bReRun is True, we allow bRun to stay true. This ensures the user to submit after warnings
+        # Warn and do not allow submission
+        # There is no way for a user to submit this query 
+#        if query.lower().find('limit ") < 0:
+#            print("ERROR - All queries must have a limit clause - Query will not submit without out")
+#            bRun = False
+        return bRun
+
+
+
 # def customDisconnect - In pyodbc
 # def customAuth - In pyodbc
 # def validateQuery - In pyodbc
